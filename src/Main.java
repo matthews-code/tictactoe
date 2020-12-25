@@ -15,10 +15,10 @@ public class Main extends Application {
         primaryStage.setTitle("Tic Tac Toe");
         primaryStage.setScene(new Scene(root, 600, 400));
         primaryStage.setResizable(false);
-        //primaryStage.show();
+        primaryStage.show();
 
-        //controller.gameInit();
-        controller.startGame(1);
+        controller.gameInit();
+        //controller.startGame(1);
     }
 
 
