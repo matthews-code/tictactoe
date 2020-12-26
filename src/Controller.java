@@ -102,9 +102,15 @@ public class Controller {
         moveList.appendText("Game Start: AI level " + aiDifficulty + "\n");
 
         if(aiFirstMove)
-            moveList.appendText("AI has first move" + "\n");
+            moveList.appendText("""
+                    AI has first move
+
+                    """);
         else
-            moveList.appendText("Player has first move" + "\n");
+            moveList.appendText("""
+                    Player has first move
+
+                    """);
 
         if(aiFirstMove)
             startGame(0);
@@ -184,6 +190,7 @@ public class Controller {
         moveCtr = 0;
         aiTurn = true;
         aiPos.clear();
+        moveList.clear();
         playerPos.clear();
         gameIsDone = false;
         aiFirstMove = true;
@@ -212,24 +219,7 @@ public class Controller {
 
     public void startGame (int pos) { // Whole game function
 
-        int score;
-
         choosePos(aiTurn, pos);
-        score = checkWinner();
-        if(score == 1) {
-            System.out.println("You are the winner!");
-            moveList.appendText("You are the winner!\n");
-        }
-
-        if(score == -1) {
-            System.out.println("You are the loser!");
-            moveList.appendText("You are the loser!\n");
-        }
-
-        if(score == 0) {
-            System.out.println("It's a tie!");
-            moveList.appendText("It's a tie!\n");
-        }
 
         if(gameIsDone) {
             iv00.setDisable(true);
@@ -244,15 +234,6 @@ public class Controller {
             aiFirstMove = !aiFirstMove;
         }
     }
-
-    /*
-    private void mouseHandler (MouseEvent e) {
-
-        System.out.print(e.getID());
-        System.out.println("test");
-
-    }
-    */
 
     private void choosePos(boolean aiTurn, int pos) { // AI or player chooses position based on the board
 
@@ -271,12 +252,12 @@ public class Controller {
 
         if(!invalid) {
             if(!aiTurn) {
-                moveList.appendText("Player's position \nYou chose position: " + pos + "\n");
+                moveList.appendText("You chose position: " + pos + "\n\n");
                 playerPos.add(pos);
             }
             else {
                 System.out.println("AI's turn \nAI chose position: " + pos + "\n");
-                moveList.appendText("AI's turn \nAI chose position: " + pos + "\n");
+                moveList.appendText("AI chose position: " + pos + "\n\n");
                 aiPos.add(pos);
             }
 
@@ -285,12 +266,17 @@ public class Controller {
             moveCtr++;
             this.aiTurn = !aiTurn;
         }
-        if(this.aiTurn)
+        checkWinner();
+        if(this.aiTurn && !gameIsDone) {
+            moveList.appendText("AI's turn\n");
             choosePos(true, 0);
+        }
+        else if (!this.aiTurn && !gameIsDone)
+            moveList.appendText("Player's turn\n");
 
     }
 
-    private int checkWinner () { // Checker for winner
+    private void checkWinner () { // Checker for winner
 
         List<Integer> topRow = Arrays.asList(1, 2, 3);
         List<Integer> midRow = Arrays.asList(4, 5, 6);
@@ -316,18 +302,20 @@ public class Controller {
         for(List<Integer> winCond: winConditions) {
             if(playerPos.containsAll(winCond)) {
                 gameIsDone = true;
-                return 1;
+                System.out.println("You are the winner!");
+                moveList.appendText("You are the winner!\n");
             }
             else if(aiPos.containsAll(winCond)) {
                 gameIsDone = true;
-                return -1;
-            }
-            else if(aiPos.size() + playerPos.size() == 9) {
-                gameIsDone = true;
-                return 0;
+                System.out.println("You are the loser!");
+                moveList.appendText("You are the loser!\n");
             }
         }
-        return -100;
+        if(aiPos.size() + playerPos.size() == 9 && !gameIsDone) {
+            gameIsDone = true;
+            System.out.println("It's a tie!");
+            moveList.appendText("It's a tie!\n");
+        }
     }
 
     private void setPos (int moveCtr, int pos) { // Position setter based from choosePos
