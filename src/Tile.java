@@ -1,25 +1,17 @@
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-
 public class Tile {
 
     private boolean isOccupied = false;
     private int row;
     private int col;
     private int pos;
-    private ImageView img;
 
-    public Tile (int row, int col, int pos, ImageView img) {
+    public Tile (int row, int col, int pos) {
         this.row = row;
         this.col = col;
         this.pos = pos;
     }
 
-    public void setOccupied () {
-        this.isOccupied = !this.isOccupied;
-    }
-
-    public void disableIMG () { this.img.setDisable(true); }
+    public void setOccupied (boolean bool) { this.isOccupied = bool; }
 
     public int getRow () {
         return this.row;
@@ -33,7 +25,7 @@ public class Tile {
         return this.pos;
     }
 
-    public boolean occupied () {
+    public boolean getOccupied () {
         return isOccupied;
     }
 

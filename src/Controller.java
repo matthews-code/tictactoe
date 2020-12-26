@@ -1,7 +1,7 @@
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
-import javafx.fxml.*;
+import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextArea;
@@ -10,7 +10,6 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 
-import javax.swing.*;
 import java.util.*;
 
 public class Controller {
@@ -34,25 +33,17 @@ public class Controller {
 
     @FXML
     private ImageView iv00, iv01, iv02, iv10, iv11, iv12, iv20, iv21, iv22;
-    private ImageView[] imgArr = {iv00, iv01, iv02, iv10, iv11, iv12, iv20, iv21, iv22};
 
     @FXML
     private ChoiceBox<String> cbxLevel;
 
     // Variables
 
-    private final Scanner sc = new Scanner(System.in);
-
-    private final char[][] board = {{' ', '|', ' ', '|', ' '},
-                              {'-', '+', '-', '+', '-'},
-                              {' ', '|', ' ', '|', ' '},
-                              {'-', '+', '-', '+', '-'},
-                              {' ', '|', ' ', '|', ' '}};
-
     private final Tile[][] guiBoard = new Tile[3][3];
 
-    private List<Integer> playerPos = new ArrayList<>();
-    private List<Integer> aiPos = new ArrayList<>();
+    // List of current positions for each player (1-9) (Tiles numbered from left to right, top to bottom)
+    private final List<Integer> playerPos = new ArrayList<>();
+    private final List<Integer> aiPos = new ArrayList<>();
 
     private final Image imgX = new Image("x.png");
     private final Image imgO = new Image("o.png");
@@ -63,17 +54,15 @@ public class Controller {
     private boolean aiFirstMove = true;
     private boolean gameIsDone = false;
 
+    public void gameInit () { initCbx(); } // Set values inside choice box
+
     private void initCbx () {
         cbxLevel.setValue("Level 1");
         cbxLevel.setItems(cbxLevelList);
     }
 
-    public void gameInit () { initCbx(); } // Set values inside choice box
-
     @FXML
     private void gameSetup () {
-
-        gridPane.getOnMouseClicked();
 
         btnStart.setDisable(true);
         btnClear.setDisable(false);
@@ -89,14 +78,11 @@ public class Controller {
         iv21.setDisable(false);
         iv22.setDisable(false);
 
-
-
         int ctr = 0;
         for(int i = 0; i < guiBoard.length; i++)
-            for(int j = 0; j < guiBoard.length; j++) {
-                guiBoard[i][j] = new Tile(i, j, ctr, imgArr[ctr]);
-                ctr++;
-            }
+            for(int j = 0; j < guiBoard.length; j++)
+                guiBoard[i][j] = new Tile(i, j, ctr);
+
 
         aiDifficulty = Integer.parseInt(cbxLevel.getValue().substring(6));
         moveList.appendText("Game Start: AI level " + aiDifficulty + "\n");
@@ -114,6 +100,8 @@ public class Controller {
 
         if(aiFirstMove)
             startGame(0);
+
+        // Below is hardcoded, replace with mouseHandler getSource()
 
         iv00.setOnMouseClicked(new EventHandler<javafx.scene.input.MouseEvent>() {
             @Override
@@ -186,14 +174,12 @@ public class Controller {
         });
     }
 
-    private void resetGame() {
+    private void resetGame() { // Resets board information, switches first player to make move
         moveCtr = 0;
-        aiTurn = true;
         aiPos.clear();
         moveList.clear();
         playerPos.clear();
         gameIsDone = false;
-        aiFirstMove = true;
         iv00.setImage(null);
         iv01.setImage(null);
         iv02.setImage(null);
@@ -215,13 +201,152 @@ public class Controller {
         btnClear.setDisable(true);
         btnStart.setDisable(false);
         cbxLevel.setDisable(false);
+        aiFirstMove = !aiFirstMove;
+        aiTurn = aiFirstMove;
+        for(Tile[] tiles: guiBoard)
+            for(Tile tile: tiles)
+                tile.setOccupied(false);
     }
 
-    public void startGame (int pos) { // Whole game function
+    public void startGame (int pos) { // Whole game function. Function not really needed
 
         choosePos(aiTurn, pos);
 
-        if(gameIsDone) {
+    }
+
+    private int bestMove (Tile[][] board) {
+
+        int bestVal = -100;
+        int row = -1;
+        int col = -1;
+
+        for(int i = 0; i < 3; i++) {
+            for(int j = 0; j < 3; j++) {
+                if(!board[i][j].getOccupied()) {
+
+                    board[i][j].setOccupied(true);
+                    aiPos.add(board[i][j].getPos());
+
+                    int currVal = gameTree(board, 0, aiFirstMove);
+
+                    board[i][j].setOccupied(false);
+                    aiPos.remove(aiPos.size() - 1);
+
+                    if(currVal > bestVal) {
+                        row = i;
+                        col = j;
+                        bestVal = currVal;
+                    }
+                }
+            }
+        }
+        return board[row][col].getPos();
+    }
+
+    private int gameTree (Tile[][] board, int depth, boolean isMax) {
+        int score = checkWinner(false);
+
+        if(score == 1)
+            return score;
+
+        if(score == -1)
+            return score;
+
+        if(score == 0)
+            return score;
+
+        if(isMax) {
+            int maxVal = -100;
+            for(int i = 0; i < 3; i++) {
+                for(int j = 0; j < 3; j++) {
+                    if(!board[i][j].getOccupied()) {
+
+                        board[i][j].setOccupied(true);
+                        playerPos.add(board[i][j].getPos());
+                        //System.out.println(board[i][j].getPos());
+
+                        maxVal = Math.max(maxVal, gameTree(board, depth + 1, false));
+
+                        board[i][j].setOccupied(false);
+                        //System.out.println(playerPos.get(playerPos.size() - 1));
+                        playerPos.remove(playerPos.size() - 1);
+                    }
+                }
+            }
+            return maxVal;
+        }
+        else {
+            int minVal = 100;
+
+            for(int i = 0; i < 3; i++) {
+                for(int j = 0; j < 3; j++) {
+                    if(!board[i][j].getOccupied()) {
+
+                        board[i][j].setOccupied(true);
+                        aiPos.add(board[i][j].getPos());
+
+                        minVal = Math.min(minVal, gameTree(board, depth + 1, true));
+
+                        board[i][j].setOccupied(false);
+                        aiPos.remove(aiPos.size() - 1);
+                    }
+                }
+            }
+            return minVal;
+        }
+    }
+
+    private void choosePos(boolean aiTurn, int pos) { // AI or player chooses position based on the board
+
+        boolean invalid = true;
+
+        Random rand = new Random();
+        if(aiTurn) {
+
+            // ------------------------------> INSERT LEVELS BELOW <----------------------------- //
+
+            if(aiDifficulty == 1)
+                while (invalid) {
+                    pos = rand.nextInt(9) + 1;
+                    if (!playerPos.contains(pos) && !aiPos.contains(pos))
+                        invalid = false;
+                }
+            else if(aiDifficulty == 2) { // bestMove and gameTree does not work and idk why
+                pos = bestMove(guiBoard);
+                invalid = false;
+            }
+            else if(aiDifficulty == 3) { // Level 2 but with AB pruning (?)
+
+            }
+        }
+        else if (!playerPos.contains(pos) && !aiPos.contains(pos)) // If player's choice is valid
+            invalid = false;
+
+
+        if(!invalid) { // If position chosen by AI or player is valid
+            if(!aiTurn) {
+                moveList.appendText("You chose position: " + pos + "\n\n");
+                playerPos.add(pos);
+            }
+            else {
+                //System.out.println("AI's turn \nAI chose position: " + pos + "\n");
+                moveList.appendText("AI chose position: " + pos + "\n\n");
+                aiPos.add(pos);
+            }
+
+            setPos(moveCtr, pos);
+            this.aiTurn = !aiTurn;
+            moveCtr++;
+        }
+
+        checkWinner(true);
+        if(this.aiTurn && !gameIsDone) {
+            moveList.appendText("AI's turn\n");
+            choosePos(true, 0); // Run choosePos right after player's turn
+        }
+        else if (!this.aiTurn && !gameIsDone)
+            moveList.appendText("Player's turn\n");
+        else {
             iv00.setDisable(true);
             iv01.setDisable(true);
             iv02.setDisable(true);
@@ -231,52 +356,10 @@ public class Controller {
             iv20.setDisable(true);
             iv21.setDisable(true);
             iv22.setDisable(true);
-            aiFirstMove = !aiFirstMove;
         }
     }
 
-    private void choosePos(boolean aiTurn, int pos) { // AI or player chooses position based on the board
-
-        boolean invalid = true;
-
-        Random rand = new Random();
-        if(aiTurn)
-            while (invalid) {
-                pos = rand.nextInt(9) + 1;
-                if (!playerPos.contains(pos) && !aiPos.contains(pos))
-                    invalid = false;
-            }
-        else
-            if (!playerPos.contains(pos) && !aiPos.contains(pos))
-                invalid = false;
-
-        if(!invalid) {
-            if(!aiTurn) {
-                moveList.appendText("You chose position: " + pos + "\n\n");
-                playerPos.add(pos);
-            }
-            else {
-                System.out.println("AI's turn \nAI chose position: " + pos + "\n");
-                moveList.appendText("AI chose position: " + pos + "\n\n");
-                aiPos.add(pos);
-            }
-
-            setPos(moveCtr, pos);
-            displayBoard(board);
-            moveCtr++;
-            this.aiTurn = !aiTurn;
-        }
-        checkWinner();
-        if(this.aiTurn && !gameIsDone) {
-            moveList.appendText("AI's turn\n");
-            choosePos(true, 0);
-        }
-        else if (!this.aiTurn && !gameIsDone)
-            moveList.appendText("Player's turn\n");
-
-    }
-
-    private void checkWinner () { // Checker for winner
+    private int checkWinner (boolean ifActual) { // Checker for winner
 
         List<Integer> topRow = Arrays.asList(1, 2, 3);
         List<Integer> midRow = Arrays.asList(4, 5, 6);
@@ -290,6 +373,7 @@ public class Controller {
         List<Integer> negativeDiag = Arrays.asList(1, 5, 9);
 
         List<List<Integer>> winConditions = new ArrayList<>();
+
         winConditions.add(topRow);
         winConditions.add(midRow);
         winConditions.add(botRow);
@@ -301,75 +385,49 @@ public class Controller {
 
         for(List<Integer> winCond: winConditions) {
             if(playerPos.containsAll(winCond)) {
-                gameIsDone = true;
-                System.out.println("You are the winner!");
-                moveList.appendText("You are the winner!\n");
+                if(ifActual) {
+                    gameIsDone = true;
+                    moveList.appendText("You are the winner!\n");
+                }
+                return -1;
             }
             else if(aiPos.containsAll(winCond)) {
-                gameIsDone = true;
-                System.out.println("You are the loser!");
-                moveList.appendText("You are the loser!\n");
+                if(ifActual) {
+                    gameIsDone = true;
+                    moveList.appendText("You are the loser!\n");
+                }
+                return 1;
             }
         }
         if(aiPos.size() + playerPos.size() == 9 && !gameIsDone) {
-            gameIsDone = true;
-            System.out.println("It's a tie!");
-            moveList.appendText("It's a tie!\n");
+            if(ifActual) {
+                gameIsDone = true;
+                moveList.appendText("It's a tie!\n");
+            }
+            return 0;
         }
+        return -10;
     }
 
     private void setPos (int moveCtr, int pos) { // Position setter based from choosePos
 
-        char symbol;
         Image img;
 
-        if(moveCtr % 2 == 0) {
-            symbol = 'X';
+        if(moveCtr % 2 == 0)
             img = imgX;
-        }
-        else {
-            symbol = 'O';
+        else
             img = imgO;
-        }
 
         switch (pos) {
-            case 1: board[0][0] = symbol;
-                    iv00.setImage(img);
-                    break;
-            case 2: board[0][2] = symbol;
-                    iv01.setImage(img);
-                    break;
-            case 3: board[0][4] = symbol;
-                    iv02.setImage(img);
-                    break;
-            case 4: board[2][0] = symbol;
-                    iv10.setImage(img);
-                    break;
-            case 5: board[2][2] = symbol;
-                    iv11.setImage(img);
-                    break;
-            case 6: board[2][4] = symbol;
-                    iv12.setImage(img);
-                    break;
-            case 7: board[4][0] = symbol;
-                    iv20.setImage(img);
-                    break;
-            case 8: board[4][2] = symbol;
-                    iv21.setImage(img);
-                    break;
-            case 9: board[4][4] = symbol;
-                    iv22.setImage(img);
-                    break;
-
+            case 1: iv00.setImage(img); guiBoard[0][0].setOccupied(true); break;
+            case 2: iv01.setImage(img); guiBoard[0][1].setOccupied(true); break;
+            case 3: iv02.setImage(img); guiBoard[0][2].setOccupied(true); break;
+            case 4: iv10.setImage(img); guiBoard[1][0].setOccupied(true); break;
+            case 5: iv11.setImage(img); guiBoard[1][1].setOccupied(true); break;
+            case 6: iv12.setImage(img); guiBoard[1][2].setOccupied(true); break;
+            case 7: iv20.setImage(img); guiBoard[2][0].setOccupied(true); break;
+            case 8: iv21.setImage(img); guiBoard[2][1].setOccupied(true); break;
+            case 9: iv22.setImage(img); guiBoard[2][2].setOccupied(true); break;
         }
-    }
-
-    private void displayBoard (char[][] board) { // Console display of board
-        for(char[] row: board) {
-            for(char c: row)
-                System.out.print(c);
-            System.out.println();
-        }
-        System.out.println();
     }
 }
