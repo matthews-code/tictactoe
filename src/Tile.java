@@ -19,6 +19,8 @@ public class Tile {
         this.isOccupied = !this.isOccupied;
     }
 
+    public void disableIMG () { this.img.setDisable(true); }
+
     public int getRow () {
         return this.row;
     }
@@ -34,4 +36,5 @@ public class Tile {
     public boolean occupied () {
         return isOccupied;
     }
+
 }

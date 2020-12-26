@@ -1,16 +1,16 @@
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.fxml.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 
 import javax.swing.*;
-import java.awt.event.MouseEvent;
-import java.beans.EventHandler;
 import java.util.*;
 
 public class Controller {
@@ -58,7 +58,7 @@ public class Controller {
     private final Image imgO = new Image("o.png");
 
     private int moveCtr = 0;
-    private String winMessage;
+    private int aiDifficulty = 0;
     private boolean aiTurn = true;
     private boolean aiFirstMove = true;
     private boolean gameIsDone = false;
@@ -73,7 +73,23 @@ public class Controller {
     @FXML
     private void gameSetup () {
 
+        gridPane.getOnMouseClicked();
+
         btnStart.setDisable(true);
+        btnClear.setDisable(false);
+        cbxLevel.setDisable(true);
+
+        iv00.setDisable(false);
+        iv01.setDisable(false);
+        iv02.setDisable(false);
+        iv10.setDisable(false);
+        iv11.setDisable(false);
+        iv12.setDisable(false);
+        iv20.setDisable(false);
+        iv21.setDisable(false);
+        iv22.setDisable(false);
+
+
 
         int ctr = 0;
         for(int i = 0; i < guiBoard.length; i++)
@@ -82,7 +98,7 @@ public class Controller {
                 ctr++;
             }
 
-        int aiDifficulty = Integer.parseInt(cbxLevel.getValue().substring(6));
+        aiDifficulty = Integer.parseInt(cbxLevel.getValue().substring(6));
         moveList.appendText("Game Start: AI level " + aiDifficulty + "\n");
 
         if(aiFirstMove)
@@ -90,80 +106,188 @@ public class Controller {
         else
             moveList.appendText("Player has first move" + "\n");
 
-        startGame(aiDifficulty);
-        aiFirstMove = !aiFirstMove;
+        if(aiFirstMove)
+            startGame(0);
+
+        iv00.setOnMouseClicked(new EventHandler<javafx.scene.input.MouseEvent>() {
+            @Override
+            public void handle(javafx.scene.input.MouseEvent event) {
+                startGame(1);
+            }
+        });
+
+        iv01.setOnMouseClicked(new EventHandler<javafx.scene.input.MouseEvent>() {
+            @Override
+            public void handle(javafx.scene.input.MouseEvent event) {
+                startGame(2);
+            }
+        });
+
+        iv02.setOnMouseClicked(new EventHandler<javafx.scene.input.MouseEvent>() {
+            @Override
+            public void handle(javafx.scene.input.MouseEvent event) {
+                startGame(3);
+            }
+        });
+
+        iv10.setOnMouseClicked(new EventHandler<javafx.scene.input.MouseEvent>() {
+            @Override
+            public void handle(javafx.scene.input.MouseEvent event) {
+                startGame(4);
+            }
+        });
+
+        iv11.setOnMouseClicked(new EventHandler<javafx.scene.input.MouseEvent>() {
+            @Override
+            public void handle(javafx.scene.input.MouseEvent event) {
+                startGame(5);
+            }
+        });
+
+        iv12.setOnMouseClicked(new EventHandler<javafx.scene.input.MouseEvent>() {
+            @Override
+            public void handle(javafx.scene.input.MouseEvent event) {
+                startGame(6);
+            }
+        });
+
+        iv20.setOnMouseClicked(new EventHandler<javafx.scene.input.MouseEvent>() {
+            @Override
+            public void handle(javafx.scene.input.MouseEvent event) {
+                startGame(7);
+            }
+        });
+
+        iv21.setOnMouseClicked(new EventHandler<javafx.scene.input.MouseEvent>() {
+            @Override
+            public void handle(javafx.scene.input.MouseEvent event) {
+                startGame(8);
+            }
+        });
+
+        iv22.setOnMouseClicked(new EventHandler<javafx.scene.input.MouseEvent>() {
+            @Override
+            public void handle(javafx.scene.input.MouseEvent event) {
+                startGame(9);
+            }
+        });
+
+        btnClear.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                resetGame();
+            }
+        });
     }
 
-    public void startGame (int aiDifficulty) { // Whole game function
+    private void resetGame() {
+        moveCtr = 0;
+        aiTurn = true;
+        aiPos.clear();
+        playerPos.clear();
+        gameIsDone = false;
+        aiFirstMove = true;
+        iv00.setImage(null);
+        iv01.setImage(null);
+        iv02.setImage(null);
+        iv10.setImage(null);
+        iv11.setImage(null);
+        iv12.setImage(null);
+        iv20.setImage(null);
+        iv21.setImage(null);
+        iv22.setImage(null);
+        iv00.setDisable(true);
+        iv01.setDisable(true);
+        iv02.setDisable(true);
+        iv10.setDisable(true);
+        iv11.setDisable(true);
+        iv12.setDisable(true);
+        iv20.setDisable(true);
+        iv21.setDisable(true);
+        iv22.setDisable(true);
+        btnClear.setDisable(true);
+        btnStart.setDisable(false);
+        cbxLevel.setDisable(false);
+    }
+
+    public void startGame (int pos) { // Whole game function
 
         int score;
-        // Fix loop
-        while(!gameIsDone) {
-            choosePos(aiTurn, aiDifficulty);
-            aiTurn = !aiTurn;
-            score = checkWinner();
-            if(score == 1) {
-                System.out.println("You are the winner!");
-                moveList.appendText("You are the winner!\n");
-            }
 
-            if(score == -1) {
-                System.out.println("You are the loser!");
-                moveList.appendText("You are the loser!\n");
-            }
-
-            if(score == 0) {
-                System.out.println("It's a tie!");
-                moveList.appendText("It's a tie!\n");
-            }
-
-            moveCtr++;
+        choosePos(aiTurn, pos);
+        score = checkWinner();
+        if(score == 1) {
+            System.out.println("You are the winner!");
+            moveList.appendText("You are the winner!\n");
         }
-        System.out.println("The game is done!");
+
+        if(score == -1) {
+            System.out.println("You are the loser!");
+            moveList.appendText("You are the loser!\n");
+        }
+
+        if(score == 0) {
+            System.out.println("It's a tie!");
+            moveList.appendText("It's a tie!\n");
+        }
+
+        if(gameIsDone) {
+            iv00.setDisable(true);
+            iv01.setDisable(true);
+            iv02.setDisable(true);
+            iv10.setDisable(true);
+            iv11.setDisable(true);
+            iv12.setDisable(true);
+            iv20.setDisable(true);
+            iv21.setDisable(true);
+            iv22.setDisable(true);
+            aiFirstMove = !aiFirstMove;
+        }
     }
 
+    /*
     private void mouseHandler (MouseEvent e) {
 
-        Tile tile;
-        tile = (Tile) e.getSource();
+        System.out.print(e.getID());
+        System.out.println("test");
 
     }
+    */
 
-    private void choosePos(boolean aiTurn, int aiDifficulty) { // AI or player chooses position based on the board
+    private void choosePos(boolean aiTurn, int pos) { // AI or player chooses position based on the board
 
         boolean invalid = true;
 
         Random rand = new Random();
-        int pos = 0;
-
-        while (invalid) {
-            pos = rand.nextInt(9) + 1;
-            if (!aiTurn) {
-                System.out.print("Player turn \nChoose position (1-9): ");
-                moveList.appendText("Player turn \nClick on a tile\n");
-                pos = sc.nextInt(); // Figure out a way to get value from mouse event
-
-                System.out.println();
+        if(aiTurn)
+            while (invalid) {
+                pos = rand.nextInt(9) + 1;
+                if (!playerPos.contains(pos) && !aiPos.contains(pos))
+                    invalid = false;
             }
-            if (!playerPos.contains(pos) && !aiPos.contains(pos) && (pos < 10 && pos > 0))
+        else
+            if (!playerPos.contains(pos) && !aiPos.contains(pos))
                 invalid = false;
-            else if (!aiTurn) {
-                System.out.println("Invalid move!");
-                moveList.appendText("Invalid move!\n");
+
+        if(!invalid) {
+            if(!aiTurn) {
+                moveList.appendText("Player's position \nYou chose position: " + pos + "\n");
+                playerPos.add(pos);
             }
-        }
+            else {
+                System.out.println("AI's turn \nAI chose position: " + pos + "\n");
+                moveList.appendText("AI's turn \nAI chose position: " + pos + "\n");
+                aiPos.add(pos);
+            }
 
-        if(!aiTurn) {
-            playerPos.add(pos);
+            setPos(moveCtr, pos);
+            displayBoard(board);
+            moveCtr++;
+            this.aiTurn = !aiTurn;
         }
-        else {
-            System.out.println("AI's turn \nAI chose position: " + pos + "\n");
-            moveList.appendText("AI's turn \nAI chose position: " + pos + "\n");
-            aiPos.add(pos);
-        }
+        if(this.aiTurn)
+            choosePos(true, 0);
 
-        setPos(moveCtr, pos);
-        displayBoard(board);
     }
 
     private int checkWinner () { // Checker for winner
