@@ -4,6 +4,7 @@ import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -15,7 +16,7 @@ import java.util.*;
 public class Controller {
 
     ObservableList<String> cbxLevelList = FXCollections.
-            observableArrayList("Level 1", "Level 2", "Level 3");
+            observableArrayList("Level 0", "Level 1", "Level 2");
 
     // FXML components
 
@@ -37,6 +38,9 @@ public class Controller {
     @FXML
     private ChoiceBox<String> cbxLevel;
 
+    @FXML
+    private Label lblX, lblO;
+
     // Variables
 
     private final Tile[][] guiBoard = new Tile[3][3];
@@ -53,11 +57,24 @@ public class Controller {
     private boolean aiTurn = true;
     private boolean aiFirstMove = true;
     private boolean gameIsDone = false;
+    private final ArrayList<ImageView> ivArray = new ArrayList<>();
 
-    public void gameInit () { initCbx(); } // Set values inside choice box
+    public void gameInit () {
+        initCbx();
+        ivArray.add(iv00);
+        ivArray.add(iv01);
+        ivArray.add(iv02);
+        ivArray.add(iv10);
+        ivArray.add(iv11);
+        ivArray.add(iv12);
+        ivArray.add(iv20);
+        ivArray.add(iv21);
+        ivArray.add(iv22);
+
+    } // Set values inside choice box
 
     private void initCbx () {
-        cbxLevel.setValue("Level 1");
+        cbxLevel.setValue("Level 0");
         cbxLevel.setItems(cbxLevelList);
     }
 
@@ -68,7 +85,10 @@ public class Controller {
         btnClear.setDisable(false);
         cbxLevel.setDisable(true);
 
-        iv00.setDisable(false);
+        for(ImageView iv : ivArray)
+            iv.setDisable(false);
+
+        /*iv00.setDisable(false);
         iv01.setDisable(false);
         iv02.setDisable(false);
         iv10.setDisable(false);
@@ -76,7 +96,7 @@ public class Controller {
         iv12.setDisable(false);
         iv20.setDisable(false);
         iv21.setDisable(false);
-        iv22.setDisable(false);
+        iv22.setDisable(false);*/
 
         int ctr = 0;
         for(int i = 0; i < guiBoard.length; i++)
@@ -87,16 +107,22 @@ public class Controller {
         aiDifficulty = Integer.parseInt(cbxLevel.getValue().substring(6));
         moveList.appendText("Game Start: AI level " + aiDifficulty + "\n");
 
-        if(aiFirstMove)
+        if(aiFirstMove) {
+            lblX.setText("AI");
+            lblO.setText("Player");
             moveList.appendText("""
                     AI has first move
 
                     """);
-        else
+        }
+        else {
+            lblX.setText("Player");
+            lblO.setText("AI");
             moveList.appendText("""
                     Player has first move
 
                     """);
+        }
 
         if(aiFirstMove)
             startGame(0);
@@ -180,7 +206,9 @@ public class Controller {
         moveList.clear();
         playerPos.clear();
         gameIsDone = false;
-        iv00.setImage(null);
+        lblX.setText(null);
+        lblO.setText(null);
+        /*iv00.setImage(null);
         iv01.setImage(null);
         iv02.setImage(null);
         iv10.setImage(null);
@@ -188,8 +216,12 @@ public class Controller {
         iv12.setImage(null);
         iv20.setImage(null);
         iv21.setImage(null);
-        iv22.setImage(null);
-        iv00.setDisable(true);
+        iv22.setImage(null);*/
+        for(ImageView iv : ivArray) {
+            iv.setImage(null);
+            iv.setDisable(true);
+        }
+        /*iv00.setDisable(true);
         iv01.setDisable(true);
         iv02.setDisable(true);
         iv10.setDisable(true);
@@ -197,7 +229,8 @@ public class Controller {
         iv12.setDisable(true);
         iv20.setDisable(true);
         iv21.setDisable(true);
-        iv22.setDisable(true);
+        iv22.setDisable(true);*/
+
         btnClear.setDisable(true);
         btnStart.setDisable(false);
         cbxLevel.setDisable(false);
@@ -302,20 +335,19 @@ public class Controller {
 
         Random rand = new Random();
         if(aiTurn) {
-
             // ------------------------------> INSERT LEVELS BELOW <----------------------------- //
 
-            if(aiDifficulty == 1)
+            if(aiDifficulty == 0)
                 while (invalid) {
                     pos = rand.nextInt(9) + 1;
                     if (!playerPos.contains(pos) && !aiPos.contains(pos))
                         invalid = false;
                 }
-            else if(aiDifficulty == 2) { // bestMove and gameTree does not work and idk why
+            else if(aiDifficulty == 1) { //Hard coded tables
                 pos = bestMove(guiBoard);
                 invalid = false;
             }
-            else if(aiDifficulty == 3) { // Level 2 but with AB pruning (?)
+            else if(aiDifficulty == 2) { // MiniMax with AB pruning
 
             }
         }
@@ -338,6 +370,8 @@ public class Controller {
             this.aiTurn = !aiTurn;
             moveCtr++;
         }
+        else
+            moveList.appendText("Invalid move. Chose another position\n\n");
 
         checkWinner(true);
         if(this.aiTurn && !gameIsDone) {
@@ -347,6 +381,7 @@ public class Controller {
         else if (!this.aiTurn && !gameIsDone)
             moveList.appendText("Player's turn\n");
         else {
+            /*
             iv00.setDisable(true);
             iv01.setDisable(true);
             iv02.setDisable(true);
@@ -355,7 +390,9 @@ public class Controller {
             iv12.setDisable(true);
             iv20.setDisable(true);
             iv21.setDisable(true);
-            iv22.setDisable(true);
+            iv22.setDisable(true);*/
+            for(ImageView iv : ivArray)
+                iv.setDisable(true);
         }
     }
 
@@ -430,4 +467,6 @@ public class Controller {
             case 9: iv22.setImage(img); guiBoard[2][2].setOccupied(true); break;
         }
     }
+
+
 }
