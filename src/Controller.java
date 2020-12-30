@@ -15,8 +15,10 @@ import java.util.*;
 
 public class Controller {
 
+    private final int MAX_DEPTH = 2; //higher depth will be more intelligent but slower (speed might not even matter)
+
     ObservableList<String> cbxLevelList = FXCollections.
-            observableArrayList("Level 0", "Level 1", "Level 2");
+            observableArrayList("Level 0", "Level 1", "Level 2", "Level 3");
 
     // FXML components
 
@@ -87,16 +89,6 @@ public class Controller {
 
         for(ImageView iv : ivArray)
             iv.setDisable(false);
-
-        /*iv00.setDisable(false);
-        iv01.setDisable(false);
-        iv02.setDisable(false);
-        iv10.setDisable(false);
-        iv11.setDisable(false);
-        iv12.setDisable(false);
-        iv20.setDisable(false);
-        iv21.setDisable(false);
-        iv22.setDisable(false);*/
 
         int ctr = 0;
         for(int i = 0; i < guiBoard.length; i++)
@@ -208,28 +200,11 @@ public class Controller {
         gameIsDone = false;
         lblX.setText(null);
         lblO.setText(null);
-        /*iv00.setImage(null);
-        iv01.setImage(null);
-        iv02.setImage(null);
-        iv10.setImage(null);
-        iv11.setImage(null);
-        iv12.setImage(null);
-        iv20.setImage(null);
-        iv21.setImage(null);
-        iv22.setImage(null);*/
+
         for(ImageView iv : ivArray) {
             iv.setImage(null);
             iv.setDisable(true);
         }
-        /*iv00.setDisable(true);
-        iv01.setDisable(true);
-        iv02.setDisable(true);
-        iv10.setDisable(true);
-        iv11.setDisable(true);
-        iv12.setDisable(true);
-        iv20.setDisable(true);
-        iv21.setDisable(true);
-        iv22.setDisable(true);*/
 
         btnClear.setDisable(true);
         btnStart.setDisable(false);
@@ -242,9 +217,7 @@ public class Controller {
     }
 
     public void startGame (int pos) { // Whole game function. Function not really needed
-
         choosePos(aiTurn, pos);
-
     }
 
     private int bestMove (Tile[][] board) {
@@ -347,13 +320,17 @@ public class Controller {
                 pos = bestMove(guiBoard);
                 invalid = false;
             }
-            else if(aiDifficulty == 2) { // MiniMax with AB pruning
-
+            else if(aiDifficulty == 2) {
+                pos = level2BestMove();
+                invalid = false;
+            }
+            else if(aiDifficulty == 3) {
+                pos = level3BestMove();
+                invalid = false;
             }
         }
         else if (!playerPos.contains(pos) && !aiPos.contains(pos)) // If player's choice is valid
             invalid = false;
-
 
         if(!invalid) { // If position chosen by AI or player is valid
             if(!aiTurn) {
@@ -381,21 +358,16 @@ public class Controller {
         else if (!this.aiTurn && !gameIsDone)
             moveList.appendText("Player's turn\n");
         else {
-            /*
-            iv00.setDisable(true);
-            iv01.setDisable(true);
-            iv02.setDisable(true);
-            iv10.setDisable(true);
-            iv11.setDisable(true);
-            iv12.setDisable(true);
-            iv20.setDisable(true);
-            iv21.setDisable(true);
-            iv22.setDisable(true);*/
             for(ImageView iv : ivArray)
                 iv.setDisable(true);
         }
     }
 
+    /**
+     * This function if there is a winner for the game
+     * @param ifActual specifies if the checking is only for evaluation or not
+     * @return 1 if the ai wins, -1 if the player wins, 0 if there is a tie
+     */
     private int checkWinner (boolean ifActual) { // Checker for winner
 
         List<Integer> topRow = Arrays.asList(1, 2, 3);
@@ -468,5 +440,94 @@ public class Controller {
         }
     }
 
+    /**
+     * This function checks if there are available moves remaining (i.e. there are still blank grids)
+     * @return true if there are moves left; Otherwise returns false
+     */
+    private boolean movesLeft() {
+        return playerPos.size() + aiPos.size() < 9;
+    }
 
+    /**
+     * This function calculates for the move which will result in the highest evaluation function using the minimax
+     * algorithm with alpha beta pruning.
+     * Level 2 evaluation function just checks the terminal states and returns a corresponding value if the game
+     * results in the AI winning, the player winning or a tie.
+     * 1 if AI wins, -1 if player wins, 0 if tie
+     * @param isAI represents the current turn
+     * @param alpha the max value found
+     * @param beta the min value found
+     * @return the terminal state with the best score
+     */
+    private int level2Minimax (boolean isAI, int alpha, int beta) {
+        int bestScore;
+        int currScore = checkWinner(false);
+
+        //check if someone has won the game or there is a tie
+        if(currScore == 1 || currScore == -1 || currScore == 0)
+            return currScore;
+
+        if(isAI){
+            bestScore = -100;
+            for(int i = 1; i <= 9; i++) {
+                if(!aiPos.contains(i) && !playerPos.contains(i)) {
+                    aiPos.add(i); //make the move
+                    bestScore = Math.max(bestScore, level2Minimax(!isAI, alpha, beta));
+                    alpha = Math.max(alpha, bestScore);
+                    aiPos.remove((Integer) i); //undo the move
+                }
+                if(alpha >= beta)
+                    break;
+            }
+        }
+        else {
+            bestScore = 100;
+            for(int i = 1; i <= 9; i++) {
+                if(!aiPos.contains(i) && !playerPos.contains(i)) {
+                    playerPos.add(i); //make the move
+                    bestScore = Math.min(bestScore, level2Minimax(!isAI, alpha, beta));
+                    beta = Math.min(beta, bestScore);
+                    playerPos.remove((Integer) i); //undo the move
+                }
+                if(alpha >= beta)
+                    break;
+            }
+        }
+        return bestScore;
+    }
+
+    /**
+     * This function calculates for the best move for the AI
+     * @return the position of the best move
+     */
+    private int level2BestMove() {
+        int bestScore = -100;
+        int bestMove = -1;
+
+        for(int i = 1; i <= 9; i++) {
+            if(!aiPos.contains(i) && !playerPos.contains(i)) {
+                aiPos.add(i); //make the move
+                int currScore = level2Minimax(false, -1000, 1000);
+                aiPos.remove((Integer) i); //undo the move
+
+                if(currScore > bestScore) {
+                    bestScore = currScore;
+                    bestMove = i;
+                }
+            }
+        }
+        return bestMove;
+    }
+
+    private int level3BestMove() {
+        return 0;
+    }
+
+    private int level3Minimax() {
+        return 0;
+    }
+
+    private int level3Evaluate() {
+        return 0;
+    }
 }
