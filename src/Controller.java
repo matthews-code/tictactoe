@@ -10,9 +10,11 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
-
 import java.util.*;
 
+/**
+ * This class is the controller for the whole game
+ */
 public class Controller {
     ObservableList<String> cbxLevelList = FXCollections.
             observableArrayList("Level 0", "Level 1", "Level 2");
@@ -57,6 +59,9 @@ public class Controller {
     private boolean gameIsDone = false;
     private final ArrayList<ImageView> ivArray = new ArrayList<>();
 
+    /**
+     * This function initializes the gui for the levels and the game board
+     */
     public void gameInit () {
         initCbx();
         ivArray.add(iv00);
@@ -68,14 +73,19 @@ public class Controller {
         ivArray.add(iv20);
         ivArray.add(iv21);
         ivArray.add(iv22);
+    }
 
-    } // Set values inside choice box
-
+    /**
+     * This function initializes the choice box for the levels
+     */
     private void initCbx () {
         cbxLevel.setValue("Level 0");
         cbxLevel.setItems(cbxLevelList);
     }
 
+    /**
+     * This function initializes the game
+     */
     @FXML
     private void gameSetup () {
 
@@ -188,7 +198,10 @@ public class Controller {
         });
     }
 
-    private void resetGame() { // Resets board information, switches first player to make move
+    /**
+     * This function resets board information, clears the board and switches first player to make move
+     */
+    private void resetGame() {
         moveCtr = 0;
         aiPos.clear();
         moveList.clear();
@@ -212,7 +225,11 @@ public class Controller {
                 tile.setOccupied(false);
     }
 
-    public void startGame (int pos) { // Whole game function. Function not really needed
+    /**
+     * This function starts the game (function not really needed)
+     * @param pos the position of the first move (initially set to 0)
+     */
+    public void startGame (int pos) {
         choosePos(aiTurn, pos);
     }
 
@@ -298,14 +315,18 @@ public class Controller {
         }
     }
 
-    private void choosePos(boolean aiTurn, int pos) { // AI or player chooses position based on the board
-
+    /**
+     * This function makes the best move for the AI player depending on the level and stores the moves made by the
+     * player and AI
+     * @param aiTurn the indicator for the current turn (i.e. true if AI's turn, false if player's turn)
+     * @param pos the position chosen by the player or AI
+     */
+    private void choosePos(boolean aiTurn, int pos) {
         boolean invalid = true;
-
         Random rand = new Random();
+
         if(aiTurn) {
             // ------------------------------> INSERT LEVELS BELOW <----------------------------- //
-
             if(aiDifficulty == 0)
                 while (invalid) {
                     pos = rand.nextInt(9) + 1;
@@ -410,8 +431,12 @@ public class Controller {
         return -20;
     }
 
+    /**
+     * This function updates the gui based on the moves selected by the AI or player
+     * @param moveCtr counter for the number of moves made
+     * @param pos the position to be updated
+     */
     private void setPos (int moveCtr, int pos) { // Position setter based from choosePos
-
         Image img;
 
         if(moveCtr % 2 == 0)
@@ -441,7 +466,7 @@ public class Controller {
     }
 
     /**
-     * This function calculates for the best move for the AI. Level 3 is unbeatable because it generates the whole
+     * This function calculates for the best move for the AI. Level 2 is unbeatable because it generates the whole
      * game tree in order to determine the best move.
      * @return the position of the best move
      */
@@ -452,7 +477,7 @@ public class Controller {
         for(int i = 1; i <= 9; i++) {
             if(!aiPos.contains(i) && !playerPos.contains(i)) {
                 aiPos.add(i); //make the move
-                int currScore = level2Minimax(false, -10000, 10000, 0);
+                int currScore = level2Minimax(false, -10000, 10000, 1);
                 aiPos.remove((Integer) i); //undo the move
 
                 if(currScore > bestScore) {
@@ -467,11 +492,13 @@ public class Controller {
     /**
      * This function calculates for the move which will result in the highest evaluation function using the minimax
      * algorithm with alpha beta pruning.
-     * Level 2 evaluation function just checks the terminal states and returns a corresponding value if the game
+     * Level 2 evaluation function checks the terminal states and returns a corresponding value if the game
      * results in the AI winning, the player winning or a tie.
      * Heuristics: H(n) = S(n) +- depth where S(n) is the score and depth is the depth of the terminal node
-     * 100 - depth if AI wins, -100 + depth if player wins, 0 if tie. Prioritizes winning moves with least depth (shortens
-     * game) while prioritizes losing moves with highest depth (prolongs game)
+     * 100 - depth if AI wins
+     * -100 + depth if player wins
+     * 0 if tie.
+     * Prioritizes winning moves with least depth (shorten game) while prioritizes losing moves with highest depth (prolongs game)
      * @param isAI represents the current turn
      * @param alpha the max value found
      * @param beta the min value found
