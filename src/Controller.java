@@ -43,7 +43,7 @@ public class Controller {
 
     // Variables
 
-    private final Tile[][] guiBoard = new Tile[3][3];
+    //private final Tile[][] guiBoard = new Tile[3][3];
 
     // List of current positions for each player (1-9) (Tiles numbered from left to right, top to bottom)
     private final List<Integer> playerPos = new ArrayList<>();
@@ -95,12 +95,6 @@ public class Controller {
 
         for(ImageView iv : ivArray)
             iv.setDisable(false);
-
-        int ctr = 0;
-        for(int i = 0; i < guiBoard.length; i++)
-            for(int j = 0; j < guiBoard.length; j++)
-                guiBoard[i][j] = new Tile(i, j, ctr);
-
 
         aiDifficulty = Integer.parseInt(cbxLevel.getValue().substring(6));
         moveList.appendText("Game Start: AI level " + aiDifficulty + "\n");
@@ -220,9 +214,7 @@ public class Controller {
         cbxLevel.setDisable(false);
         aiFirstMove = !aiFirstMove;
         aiTurn = aiFirstMove;
-        for(Tile[] tiles: guiBoard)
-            for(Tile tile: tiles)
-                tile.setOccupied(false);
+
     }
 
     /**
@@ -231,88 +223,6 @@ public class Controller {
      */
     public void startGame (int pos) {
         choosePos(aiTurn, pos);
-    }
-
-    private int bestMove (Tile[][] board) {
-
-        int bestVal = -1000;
-        int row = -1;
-        int col = -1;
-
-        for(int i = 0; i < 3; i++) {
-            for(int j = 0; j < 3; j++) {
-                if(!board[i][j].getOccupied()) {
-
-                    board[i][j].setOccupied(true);
-                    aiPos.add(board[i][j].getPos());
-
-                    int currVal = gameTree(board, 0, aiFirstMove);
-
-                    board[i][j].setOccupied(false);
-                    aiPos.remove(aiPos.size() - 1);
-
-                    if(currVal > bestVal) {
-                        row = i;
-                        col = j;
-                        bestVal = currVal;
-                    }
-                }
-            }
-        }
-        return board[row][col].getPos();
-    }
-
-    private int gameTree (Tile[][] board, int depth, boolean isMax) {
-        int score = checkWinner(false);
-
-        if(score == 100)
-            return score;
-
-        if(score == -100)
-            return score;
-
-        if(score == 0)
-            return score;
-
-        if(isMax) {
-            int maxVal = -1000;
-            for(int i = 0; i < 3; i++) {
-                for(int j = 0; j < 3; j++) {
-                    if(!board[i][j].getOccupied()) {
-
-                        board[i][j].setOccupied(true);
-                        playerPos.add(board[i][j].getPos());
-                        //System.out.println(board[i][j].getPos());
-
-                        maxVal = Math.max(maxVal, gameTree(board, depth + 1, false));
-
-                        board[i][j].setOccupied(false);
-                        //System.out.println(playerPos.get(playerPos.size() - 1));
-                        playerPos.remove(playerPos.size() - 1);
-                    }
-                }
-            }
-            return maxVal;
-        }
-        else {
-            int minVal = 1000;
-
-            for(int i = 0; i < 3; i++) {
-                for(int j = 0; j < 3; j++) {
-                    if(!board[i][j].getOccupied()) {
-
-                        board[i][j].setOccupied(true);
-                        aiPos.add(board[i][j].getPos());
-
-                        minVal = Math.min(minVal, gameTree(board, depth + 1, true));
-
-                        board[i][j].setOccupied(false);
-                        aiPos.remove(aiPos.size() - 1);
-                    }
-                }
-            }
-            return minVal;
-        }
     }
 
     /**
@@ -334,7 +244,7 @@ public class Controller {
                         invalid = false;
                 }
             else if(aiDifficulty == 1) { //Hard coded tables
-                pos = bestMove(guiBoard);
+                pos = level1BestMove();
                 invalid = false;
             }
             else if(aiDifficulty == 2) {
@@ -445,15 +355,15 @@ public class Controller {
             img = imgO;
 
         switch (pos) {
-            case 1: iv00.setImage(img); guiBoard[0][0].setOccupied(true); break;
-            case 2: iv01.setImage(img); guiBoard[0][1].setOccupied(true); break;
-            case 3: iv02.setImage(img); guiBoard[0][2].setOccupied(true); break;
-            case 4: iv10.setImage(img); guiBoard[1][0].setOccupied(true); break;
-            case 5: iv11.setImage(img); guiBoard[1][1].setOccupied(true); break;
-            case 6: iv12.setImage(img); guiBoard[1][2].setOccupied(true); break;
-            case 7: iv20.setImage(img); guiBoard[2][0].setOccupied(true); break;
-            case 8: iv21.setImage(img); guiBoard[2][1].setOccupied(true); break;
-            case 9: iv22.setImage(img); guiBoard[2][2].setOccupied(true); break;
+            case 1 -> iv00.setImage(img);
+            case 2 -> iv01.setImage(img);
+            case 3 -> iv02.setImage(img);
+            case 4 -> iv10.setImage(img);
+            case 5 -> iv11.setImage(img);
+            case 6 -> iv12.setImage(img);
+            case 7 -> iv20.setImage(img);
+            case 8 -> iv21.setImage(img);
+            case 9 -> iv22.setImage(img);
         }
     }
 
@@ -463,6 +373,20 @@ public class Controller {
      */
     private boolean movesLeft() {
         return playerPos.size() + aiPos.size() < 9;
+    }
+
+    /**
+     * This function calculates for the best move for the AI. Level 1 uses hard coded tables to find the best move
+     * @return the position of the best move
+     */
+    private int level1BestMove() {
+        int[] side = {2, 4, 6, 8}; //position for sides
+        int[] corner = {1, 3, 7, 9}; //position for corners
+        int mid = 5; //position for mid
+
+
+
+        return 0;
     }
 
     /**
