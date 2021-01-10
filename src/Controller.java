@@ -292,28 +292,16 @@ public class Controller {
      * @return 100 if the ai wins, -100 if the player wins, 0 if there is a tie, -20 if game is not over yet
      */
     private int checkWinner (boolean ifActual) { // Checker for winner
-
-        List<Integer> topRow = Arrays.asList(1, 2, 3);
-        List<Integer> midRow = Arrays.asList(4, 5, 6);
-        List<Integer> botRow = Arrays.asList(7, 8, 9);
-
-        List<Integer> leftCol = Arrays.asList(1, 4, 7);
-        List<Integer> midCol = Arrays.asList(2, 5, 8);
-        List<Integer> rightCol = Arrays.asList(3, 6, 9);
-
-        List<Integer> positiveDiag = Arrays.asList(7, 5, 3);
-        List<Integer> negativeDiag = Arrays.asList(1, 5, 9);
-
         List<List<Integer>> winConditions = new ArrayList<>();
 
-        winConditions.add(topRow);
-        winConditions.add(midRow);
-        winConditions.add(botRow);
-        winConditions.add(leftCol);
-        winConditions.add(midCol);
-        winConditions.add(rightCol);
-        winConditions.add(positiveDiag);
-        winConditions.add(negativeDiag);
+        winConditions.add(Arrays.asList(1, 2, 3)); //top row
+        winConditions.add(Arrays.asList(4, 5, 6)); //mid row
+        winConditions.add(Arrays.asList(7, 8, 9)); //bottom row
+        winConditions.add(Arrays.asList(1, 4, 7)); //left col
+        winConditions.add(Arrays.asList(2, 5, 8)); //mid col
+        winConditions.add(Arrays.asList(3, 6, 9)); //right col
+        winConditions.add(Arrays.asList(7, 5, 3)); //positive diagonal
+        winConditions.add(Arrays.asList(1, 5, 9)); //negative diagonal
 
         for(List<Integer> winCond: winConditions) {
             if(playerPos.containsAll(winCond)) {
@@ -368,25 +356,239 @@ public class Controller {
     }
 
     /**
-     * This function checks if there are available moves remaining (i.e. there are still blank grids)
-     * @return true if there are moves left; Otherwise returns false
+     * This function checks if the AI or player is one move away from winning (i.e. can win in the next move)
+     * @param isAI turn indicator; true if AI's turn, false if player's turn
+     * @return -1 if AI or player cannot win in the next move; otherwise, returns the position of the winning move
      */
-    private boolean movesLeft() {
-        return playerPos.size() + aiPos.size() < 9;
+    private int oneMoveAway(boolean isAI) {
+        List<List<Integer>> winConditions = new ArrayList<>();
+        winConditions.add(Arrays.asList(1, 2, 3)); //top row
+        winConditions.add(Arrays.asList(4, 5, 6)); //mid row
+        winConditions.add(Arrays.asList(7, 8, 9)); //bottom row
+        winConditions.add(Arrays.asList(1, 4, 7)); //left col
+        winConditions.add(Arrays.asList(2, 5, 8)); //mid col
+        winConditions.add(Arrays.asList(3, 6, 9)); //right col
+        winConditions.add(Arrays.asList(7, 5, 3)); //positive diagonal
+        winConditions.add(Arrays.asList(1, 5, 9)); //negative diagonal
+
+        boolean oneMoveAway = false;
+        int neededPos = -1;
+
+        for(List<Integer> winCond : winConditions) {
+            int count = 0;
+            neededPos = -1;
+            for(int pos : winCond) {
+                if(isAI) {
+                    if(aiPos.contains(pos))
+                        count++;
+                    else
+                        neededPos = pos;
+                }
+                else {
+                    if(playerPos.contains(pos))
+                        count++;
+                    else
+                        neededPos = pos;
+                }
+
+            }
+
+            if(count == 2) {
+                if(isAI) {
+                    if(!playerPos.contains(neededPos)) {
+                        oneMoveAway = true;
+                        break;
+                    }
+                }
+                else {
+                    if(!aiPos.contains(neededPos)) {
+                        oneMoveAway = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if(oneMoveAway)
+            return neededPos;
+        else
+            return -1;
     }
 
     /**
-     * This function calculates for the best move for the AI. Level 1 uses hard coded tables to find the best move
+     * This function calculates for the best move for the AI. Level 1 uses hard coded rules to find the best move
      * @return the position of the best move
      */
     private int level1BestMove() {
-        int[] side = {2, 4, 6, 8}; //position for sides
-        int[] corner = {1, 3, 7, 9}; //position for corners
-        int mid = 5; //position for mid
+        /*checking if AI or player can win in the next move effectively eliminates the need to hard code those states */
 
+        //check if AI is one move away from winning, if yes take move to win game, if no check player
+        int pos = oneMoveAway(true);
+        if(pos != -1)
+            return pos;
 
+        //check if player is one move away from winning, if yes block
+        pos = oneMoveAway(false);
+        if(pos != -1)
+            return pos;
 
-        return 0;
+        /*if both AI and player cannot win in the next move, check if available moves left is <= 2
+        if yes, choose any available position (because if there are <= 2 moves left, and both player and
+        AI cannot win in the next move, then all succeeding configurations will result in a tie)
+        if no, check hard coded tables*/
+        if(9 - (playerPos.size() + aiPos.size()) <= 2) {
+            boolean found = false;
+            for(int i = 1; i <= 9 && !found; i++) {
+                if(!playerPos.contains(i) && !aiPos.contains(i)) {
+                    found = true;
+                    pos = i;
+                }
+            }
+            return pos;
+        }
+
+        /*-------------------------- HARD CODED TABLES BELOW (refer to level 1 diagram) --------------------------*/
+        /*if moveCtr is even, AI goes first; otherwise player goes first
+        * moveCtr is also the current depth of the tree*/
+        switch(moveCtr) {
+            case 0:
+                pos = 5;
+                break;
+            case 1:
+                if(!playerPos.contains(5))
+                    pos = 5;
+                else
+                    pos = 1;
+                break;
+            case 2:
+                if(playerPos.contains(1) || playerPos.contains(2))
+                    pos = 9;
+                else if(playerPos.contains(3) || playerPos.contains(6))
+                    pos = 7;
+                else if(playerPos.contains(9) || playerPos.contains(8))
+                    pos = 1;
+                else if(playerPos.contains(7) || playerPos.contains(4))
+                    pos = 3;
+            case 3:
+                if(playerPos.containsAll(Arrays.asList(1,9)) && aiPos.contains(5))
+                    pos = 4;
+                else if(playerPos.containsAll(Arrays.asList(3,7)) && aiPos.contains(5))
+                    pos = 2;
+                else if(playerPos.containsAll(Arrays.asList(1,6)) && aiPos.contains(5))
+                    pos = 9;
+                else if(playerPos.containsAll(Arrays.asList(3,8)) && aiPos.contains(5))
+                    pos = 7;
+                else if(playerPos.containsAll(Arrays.asList(4,9)) && aiPos.contains(5))
+                    pos = 1;
+                else if(playerPos.containsAll(Arrays.asList(2,7)) && aiPos.contains(5))
+                    pos = 3;
+                else if(playerPos.containsAll(Arrays.asList(2,9)) && aiPos.contains(5))
+                    pos = 1;
+                else if(playerPos.containsAll(Arrays.asList(6,7)) && aiPos.contains(5))
+                    pos = 3;
+                else if(playerPos.containsAll(Arrays.asList(1,8)) && aiPos.contains(5))
+                    pos = 9;
+                else if(playerPos.containsAll(Arrays.asList(3,4)) && aiPos.contains(5))
+                    pos = 7;
+                else if(playerPos.containsAll(Arrays.asList(2,8)) && aiPos.contains(5))
+                    pos = 4;
+                else if(playerPos.containsAll(Arrays.asList(4,6)) && aiPos.contains(5))
+                    pos = 2;
+                else if(playerPos.containsAll(Arrays.asList(2,4)) && aiPos.contains(5))
+                    pos = 1;
+                else if(playerPos.containsAll(Arrays.asList(2,6)) && aiPos.contains(5))
+                    pos = 3;
+                else if(playerPos.containsAll(Arrays.asList(6,8)) && aiPos.contains(5))
+                    pos = 9;
+                else if(playerPos.containsAll(Arrays.asList(4,8)) && aiPos.contains(5))
+                    pos = 7;
+                else if(playerPos.containsAll(Arrays.asList(5,9)) && aiPos.contains(1))
+                    pos = 7;
+                break;
+            case 4:
+                if(playerPos.containsAll(Arrays.asList(1,8)) && aiPos.containsAll(Arrays.asList(5, 9)))
+                    pos = 6;
+                else if(playerPos.containsAll(Arrays.asList(3,4)) && aiPos.containsAll(Arrays.asList(5, 7)))
+                    pos = 8;
+                else if(playerPos.containsAll(Arrays.asList(2,9)) && aiPos.containsAll(Arrays.asList(5, 1)))
+                    pos = 4;
+                else if(playerPos.containsAll(Arrays.asList(6,7)) && aiPos.containsAll(Arrays.asList(5, 3)))
+                    pos = 2;
+                else if(playerPos.containsAll(Arrays.asList(1,6)) && aiPos.containsAll(Arrays.asList(5, 9)))
+                    pos = 8;
+                else if(playerPos.containsAll(Arrays.asList(3,8)) && aiPos.containsAll(Arrays.asList(5, 7)))
+                    pos = 4;
+                else if(playerPos.containsAll(Arrays.asList(4,9)) && aiPos.containsAll(Arrays.asList(5, 1)))
+                    pos = 2;
+                else if(playerPos.containsAll(Arrays.asList(2,7)) && aiPos.containsAll(Arrays.asList(5, 3)))
+                    pos = 6;
+                break;
+            case 5:
+                if(playerPos.containsAll(Arrays.asList(1,6,7)) && aiPos.containsAll(Arrays.asList(4,5)))
+                    pos = 8;
+                else if(playerPos.containsAll(Arrays.asList(1,3,8)) && aiPos.containsAll(Arrays.asList(2,5)))
+                    pos = 4;
+                else if(playerPos.containsAll(Arrays.asList(3,4,9)) && aiPos.containsAll(Arrays.asList(6,5)))
+                    pos = 2;
+                else if(playerPos.containsAll(Arrays.asList(2,7,9)) && aiPos.containsAll(Arrays.asList(8,5)))
+                    pos = 6;
+                else if(playerPos.containsAll(Arrays.asList(1,6,8)) && aiPos.containsAll(Arrays.asList(9,5)))
+                    pos = 3;
+                else if(playerPos.containsAll(Arrays.asList(3,4,8)) && aiPos.containsAll(Arrays.asList(7,5)))
+                    pos = 9;
+                else if(playerPos.containsAll(Arrays.asList(2,4,9)) && aiPos.containsAll(Arrays.asList(1,5)))
+                    pos = 7;
+                else if(playerPos.containsAll(Arrays.asList(2,6,7)) && aiPos.containsAll(Arrays.asList(3,5)))
+                    pos = 1;
+                else if(playerPos.containsAll(Arrays.asList(2,6,8)) && aiPos.containsAll(Arrays.asList(4,5)))
+                    pos = 7;
+                else if(playerPos.containsAll(Arrays.asList(4,6,8)) && aiPos.containsAll(Arrays.asList(2,5)))
+                    pos = 1;
+                else if(playerPos.containsAll(Arrays.asList(2,4,8)) && aiPos.containsAll(Arrays.asList(6,5)))
+                    pos = 3;
+                else if(playerPos.containsAll(Arrays.asList(2,4,6)) && aiPos.containsAll(Arrays.asList(8,5)))
+                    pos = 9;
+                else if(playerPos.containsAll(Arrays.asList(4,5,9)) && aiPos.containsAll(Arrays.asList(1,6)))
+                    pos = 3;
+                else if(playerPos.containsAll(Arrays.asList(2,5,7)) && aiPos.containsAll(Arrays.asList(3,8)))
+                    pos = 9;
+                else if(playerPos.containsAll(Arrays.asList(1,5,6)) && aiPos.containsAll(Arrays.asList(4,9)))
+                    pos = 7;
+                else if(playerPos.containsAll(Arrays.asList(3,5,8)) && aiPos.containsAll(Arrays.asList(2,7)))
+                    pos = 1;
+                else if(playerPos.containsAll(Arrays.asList(5,6,7)) && aiPos.containsAll(Arrays.asList(3,4)))
+                    pos = 1;
+                else if(playerPos.containsAll(Arrays.asList(1,5,8)) && aiPos.containsAll(Arrays.asList(2,9)))
+                    pos = 3;
+                else if(playerPos.containsAll(Arrays.asList(3,4,5)) && aiPos.containsAll(Arrays.asList(6,7)))
+                    pos = 9;
+                else if(playerPos.containsAll(Arrays.asList(2,5,9)) && aiPos.containsAll(Arrays.asList(8,1)))
+                    pos = 7;
+                break;
+            case 6:
+                //at this point it doesnt matter which position is chosen so choose any blank tile
+                boolean found = false;
+                for(int i = 1; i <= 9 && !found; i++) {
+                    if(!playerPos.contains(i) && !aiPos.contains(i)) {
+                        found = true;
+                        pos = i;
+                    }
+                }
+                break;
+        }
+
+        //additional checker only, in case something goes wrong with the above
+        if(pos <= 0) {
+            boolean found = false;
+            for(int i = 1; i <= 9 && !found; i++) {
+                if(!playerPos.contains(i) && !aiPos.contains(i)) {
+                    found = true;
+                    pos = i;
+                }
+            }
+        }
+
+        return pos;
     }
 
     /**
