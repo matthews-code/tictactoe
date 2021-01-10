@@ -417,11 +417,18 @@ public class Controller {
 
     /**
      * This function calculates for the best move for the AI. Level 1 uses hard coded rules to find the best move
+     * Steps:
+     * 1 - Check if AI can win in next move (if yes, take the move; if no, step 2)
+     * 2 - Check if player can win in next move (if yes, block; if no, step 3)
+     * 3 - Check if blank/available moves <= 2 (if yes, choose randomly; if no, step 4)
+     * 4 - Check hard coded states
+     *
+     * Checking if AI or player can win in the next move effectively eliminates the need to hard code those states
+     * Additionally, if available moves <= 2, and both player and AI cannot win in the next move, then all
+     * succeeding configurations will result in a tie so no need to hard code those states
      * @return the position of the best move
      */
     private int level1BestMove() {
-        /*checking if AI or player can win in the next move effectively eliminates the need to hard code those states */
-
         //check if AI is one move away from winning, if yes take move to win game, if no check player
         int pos = oneMoveAway(true);
         if(pos != -1)
@@ -433,8 +440,7 @@ public class Controller {
             return pos;
 
         /*if both AI and player cannot win in the next move, check if available moves left is <= 2
-        if yes, choose any available position (because if there are <= 2 moves left, and both player and
-        AI cannot win in the next move, then all succeeding configurations will result in a tie)
+        if yes, choose any available position
         if no, check hard coded tables*/
         if(9 - (playerPos.size() + aiPos.size()) <= 2) {
             boolean found = false;
